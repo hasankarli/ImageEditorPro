@@ -229,11 +229,16 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                                                                     height: 1,
                                                                   ),
                                                                   new Slider(
+                                                                      inactiveColor: Colors
+                                                                          .lightGreen,
+                                                                      activeColor:
+                                                                          Colors
+                                                                              .green,
                                                                       value: emojiModel
                                                                           .fontSize,
                                                                       min: 0.0,
                                                                       max:
-                                                                          200.0,
+                                                                          400.0,
                                                                       onChangeEnd:
                                                                           (v) {
                                                                         setState(
@@ -371,11 +376,16 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                                                                     StateSetter
                                                                         setStater) {
                                                                   return Slider(
+                                                                      inactiveColor: Colors
+                                                                          .lightGreen,
+                                                                      activeColor:
+                                                                          Colors
+                                                                              .green,
                                                                       value: textModel
                                                                           .fontSize,
                                                                       min: 0.0,
                                                                       max:
-                                                                          200.0,
+                                                                          400.0,
                                                                       onChangeEnd:
                                                                           (v) {
                                                                         setState(
