@@ -25,10 +25,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> getimageditor() {
     final geteditimage =
         Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return ImageEditorPro(
-        appBarColor: Colors.blue,
-        bottomBarColor: Colors.blue,
-      );
+      return ImageEditorPro();
     })).then((geteditimage) {
       if (geteditimage != null) {
         setState(() {
