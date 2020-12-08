@@ -748,7 +748,7 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                             height: 10,
                           ),
                           Text(
-                            'Choose background',
+                            'Choose Background',
                             style: TextStyle(
                                 color: Colors.grey[700],
                                 fontWeight: FontWeight.w500,
@@ -865,9 +865,11 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                               imageFile: _image,
                             );
                           });
-                      setState(() {
-                        filter = newFilter;
-                      });
+                      if (newFilter != null) {
+                        setState(() {
+                          filter = newFilter;
+                        });
+                      }
                     }
                     break;
                   default:
@@ -938,11 +940,11 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                                   onPressed: () async {
                                     var pickedFile = await picker.getImage(
                                         source: ImageSource.gallery);
-
                                     var decodedImage =
                                         await decodeImageFromList(
                                             File(pickedFile.path)
                                                 .readAsBytesSync());
+
                                     if (forImageModel) {
                                       ImageModel imageModel = ImageModel(
                                         offset: Offset(10, 10),
@@ -963,6 +965,7 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                                       });
                                       setState(() => _controller.clear());
                                     }
+
                                     Navigator.pop(context);
                                   }),
                               SizedBox(width: 10),
@@ -983,7 +986,6 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                                 onPressed: () async {
                                   var pickedFile = await picker.getImage(
                                       source: ImageSource.camera);
-
                                   var decodedImage = await decodeImageFromList(
                                       File(pickedFile.path).readAsBytesSync());
 
@@ -1007,6 +1009,7 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                                     });
                                     setState(() => _controller.clear());
                                   }
+
                                   Navigator.pop(context);
                                 }),
                             SizedBox(width: 10),
