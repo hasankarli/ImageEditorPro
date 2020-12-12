@@ -10,16 +10,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.0
-  dio: ^3.0.10
-  flutter_colorpicker: ^0.3.4
-  font_awesome_flutter: ^8.10.1
-  image_gallery_saver: ^1.6.7
   image_picker:
     git:
       url: https://github.com/cpboyd/plugins.git
       ref: image_picker_workaround
       path: packages/image_picker/image_picker
+  cupertino_icons: ^1.0.0
+  dio: ^3.0.10
+  flutter_colorpicker: ^0.3.4
+  font_awesome_flutter: ^8.10.1
+  image_gallery_saver: ^1.6.7
   path_provider: ^1.6.24
   permission_handler: ^5.0.1+1
   screenshot: ^0.2.0

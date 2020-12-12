@@ -22,10 +22,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Future<void> getimageditor() {
+  Future<void> getimageditor({File image}) {
     final geteditimage =
         Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return ImageEditorPro();
+      return ImageEditorPro(
+        image: image,
+      );
     })).then((geteditimage) {
       if (geteditimage != null) {
         setState(() {
@@ -53,8 +55,13 @@ class _HomePageState extends State<HomePage> {
                 child: new Text("Open Editor"),
               ),
             )
-          : Center(
-              child: Image.file(_image),
+          : GestureDetector(
+              onTap: () {
+                getimageditor(image: _image);
+              },
+              child: Center(
+                child: Image.file(_image),
+              ),
             ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.close),

@@ -37,6 +37,10 @@ SignatureController _controller =
     SignatureController(penStrokeWidth: 5, penColor: Colors.green);
 
 class ImageEditorPro extends StatefulWidget {
+  final File image;
+
+  const ImageEditorPro({Key key, this.image}) : super(key: key);
+
   @override
   _ImageEditorProState createState() => _ImageEditorProState();
 }
@@ -87,6 +91,29 @@ class _ImageEditorProState extends State<ImageEditorPro> {
   }
 
   @override
+  Future<void> didChangeDependencies() async {
+    super.didChangeDependencies();
+    if (widget.image != null) {
+      setState(() {
+        isLoading = true;
+      });
+      _image = widget.image;
+      await setImageHeightWidth();
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  bool isLoading = false;
+  Future<void> setImageHeightWidth() async {
+    var decodedImage =
+        await decodeImageFromList(File(_image.path).readAsBytesSync());
+    height = decodedImage.height.toDouble();
+    width = decodedImage.width.toDouble();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
@@ -113,7 +140,7 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                 editWidget = false;
               });
               screenshotController
-                  .capture(delay: Duration(milliseconds: 500), pixelRatio: 1.5)
+                  .capture(delay: Duration(milliseconds: 500), pixelRatio: 1.0)
                   .then((File image) async {
                 final paths = await getTemporaryDirectory();
                 image.copy(paths.path +
@@ -129,677 +156,702 @@ class _ImageEditorProState extends State<ImageEditorPro> {
         ],
         elevation: 0,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Screenshot(
-                  controller: screenshotController,
-                  child: Container(
-                    margin: EdgeInsets.all(20),
-                    color: Colors.white,
-                    width: width.toDouble(),
-                    height: height.toDouble(),
-                    child: RepaintBoundary(
-                      key: globalKey,
-                      child: Stack(
-                        children: <Widget>[
-                          _image != null
-                              ? ColorFiltered(
-                                  colorFilter: ColorFilter.matrix(filter),
-                                  child: Image.file(
-                                    _image,
-                                    height: height.toDouble(),
-                                    width: width.toDouble(),
-                                    fit: BoxFit.cover,
+      body: isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: new AlwaysStoppedAnimation<Color>(Colors.blue),
+              ),
+            )
+          : SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Screenshot(
+                          controller: screenshotController,
+                          child: Container(
+                            color: Colors.white,
+                            width: width.toDouble(),
+                            height: height.toDouble(),
+                            child: RepaintBoundary(
+                              key: globalKey,
+                              child: Stack(
+                                children: <Widget>[
+                                  _image != null
+                                      ? ColorFiltered(
+                                          colorFilter:
+                                              ColorFilter.matrix(filter),
+                                          child: Image.file(
+                                            _image,
+                                            height: height.toDouble(),
+                                            width: width.toDouble(),
+                                            fit: BoxFit.cover,
+                                          ),
+                                        )
+                                      : Container(),
+                                  Container(
+                                    child: GestureDetector(
+                                        onPanUpdate:
+                                            (DragUpdateDetails details) {
+                                          setState(() {
+                                            RenderBox object =
+                                                context.findRenderObject();
+                                            Offset _localPosition =
+                                                object.globalToLocal(
+                                                    details.globalPosition);
+                                            _points = new List.from(_points)
+                                              ..add(_localPosition);
+                                          });
+                                        },
+                                        onPanEnd: (DragEndDetails details) {
+                                          _points.add(null);
+                                        },
+                                        child: Signat(
+                                          height: height,
+                                          width: width,
+                                        )),
                                   ),
-                                )
-                              : Container(),
-                          Container(
-                            child: GestureDetector(
-                                onPanUpdate: (DragUpdateDetails details) {
-                                  setState(() {
-                                    RenderBox object =
-                                        context.findRenderObject();
-                                    Offset _localPosition = object
-                                        .globalToLocal(details.globalPosition);
-                                    _points = new List.from(_points)
-                                      ..add(_localPosition);
-                                  });
-                                },
-                                onPanEnd: (DragEndDetails details) {
-                                  _points.add(null);
-                                },
-                                child: Signat(
-                                  height: height,
-                                  width: width,
-                                )),
-                          ),
-                          Stack(
-                              children: widgets
-                                  .asMap()
-                                  .map((i, widget) {
-                                    if (widget.runtimeType == EmojiModel) {
-                                      EmojiModel emojiModel = widget;
-                                      return MapEntry(
-                                        i,
-                                        Stack(
-                                          children: [
-                                            Positioned(
-                                              left: emojiModel.offset.dx,
-                                              top: emojiModel.offset.dy,
-                                              child: Container(
-                                                padding: EdgeInsets.all(5),
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                      color: editWidget
-                                                          ? Colors.black
-                                                          : Colors.transparent,
-                                                      width: 0.3),
-                                                ),
-                                                child: EmojiView(
-                                                  ontap: () {
-                                                    showModalBottomSheet(
-                                                      shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.vertical(
-                                                                  top: Radius
-                                                                      .circular(
-                                                                          25.0))),
-                                                      context: context,
-                                                      builder: (context) {
-                                                        return StatefulBuilder(
-                                                          builder: (context,
-                                                              StateSetter
-                                                                  setStater) {
-                                                            return Container(
-                                                              height: 120,
-                                                              child: Column(
-                                                                children: <
-                                                                    Widget>[
-                                                                  Padding(
-                                                                    padding: const EdgeInsets
-                                                                            .all(
-                                                                        20.0),
-                                                                    child: new Text(
-                                                                        "Slider Size"),
-                                                                  ),
-                                                                  Divider(
-                                                                    height: 1,
-                                                                  ),
-                                                                  new Slider(
-                                                                      inactiveColor: Colors
-                                                                          .lightGreen,
-                                                                      activeColor:
-                                                                          Colors
-                                                                              .green,
-                                                                      value: emojiModel
-                                                                          .fontSize,
-                                                                      min: 0.0,
-                                                                      max:
-                                                                          400.0,
-                                                                      onChangeEnd:
-                                                                          (v) {
-                                                                        setState(
-                                                                            () {
-                                                                          emojiModel.fontSize =
-                                                                              v;
-                                                                        });
-                                                                      },
-                                                                      onChanged:
-                                                                          (v) {
-                                                                        setStater(
-                                                                            () {
-                                                                          emojiModel.fontSize =
-                                                                              v;
-                                                                        });
-                                                                        setState(
-                                                                            () {
-                                                                          emojiModel.fontSize =
-                                                                              v;
-                                                                        });
-                                                                      }),
-                                                                ],
-                                                              ),
-                                                            );
-                                                          },
-                                                        );
-                                                      },
-                                                    );
-                                                  },
-                                                  onpanupdate: (details) {
-                                                    setState(() {
-                                                      emojiModel.offset =
-                                                          Offset(
-                                                              emojiModel.offset
-                                                                      .dx +
-                                                                  details
-                                                                      .delta.dx,
-                                                              emojiModel.offset
-                                                                      .dy +
-                                                                  details.delta
-                                                                      .dy);
-                                                    });
-                                                  },
-                                                  value: emojiModel.emoji,
-                                                  fontsize: emojiModel.fontSize,
-                                                  align: TextAlign.center,
-                                                ),
-                                              ),
-                                            ),
-                                            Positioned(
-                                              left: emojiModel.offset.dx - 8,
-                                              top: emojiModel.offset.dy - 8,
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  print(i);
-                                                  setState(() {
-                                                    widgets.removeWhere(
-                                                        (widget) =>
-                                                            widget ==
-                                                            widgets[i]);
-                                                  });
-                                                },
-                                                child: Container(
-                                                    decoration: BoxDecoration(
-                                                        color: editWidget
-                                                            ? Colors.black
-                                                            : Colors
-                                                                .transparent,
-                                                        shape: BoxShape.circle,
-                                                        border: Border.all(
-                                                            width: 1,
-                                                            color: editWidget
-                                                                ? Colors.black
-                                                                : Colors
-                                                                    .transparent)),
-                                                    child: Icon(
-                                                      Icons.close,
-                                                      color: editWidget
-                                                          ? Colors.white
-                                                          : Colors.transparent,
-                                                      size: 14,
-                                                    )),
-                                              ),
-                                            )
-                                          ],
-                                        ),
-                                      );
-                                    } else if (widget.runtimeType ==
-                                        TextModel) {
-                                      TextModel textModel = widget;
-                                      return MapEntry(
-                                        i,
-                                        Stack(
-                                          children: [
-                                            Positioned(
-                                              left: textModel.offset.dx,
-                                              top: textModel.offset.dy,
-                                              child: Container(
-                                                padding: EdgeInsets.all(10),
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                      color: editWidget
-                                                          ? Colors.black
-                                                          : Colors.transparent,
-                                                      width: 0.3),
-                                                ),
-                                                child: TextView(
-                                                  ontap: () {
-                                                    showModalBottomSheet(
-                                                      shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.vertical(
-                                                                  top: Radius
-                                                                      .circular(
-                                                                          25.0))),
-                                                      context: context,
-                                                      builder: (context) {
-                                                        return Container(
-                                                          height: 120,
-                                                          child: Column(
-                                                            children: <Widget>[
-                                                              Padding(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                            .all(
-                                                                        20.0),
-                                                                child: new Text(
-                                                                    "Slider Size"),
-                                                              ),
-                                                              Divider(
-                                                                height: 1,
-                                                              ),
-                                                              StatefulBuilder(
-                                                                builder: (context,
-                                                                    StateSetter
-                                                                        setStater) {
-                                                                  return Slider(
-                                                                      inactiveColor: Colors
-                                                                          .lightGreen,
-                                                                      activeColor:
-                                                                          Colors
-                                                                              .green,
-                                                                      value: textModel
-                                                                          .fontSize,
-                                                                      min: 0.0,
-                                                                      max:
-                                                                          400.0,
-                                                                      onChangeEnd:
-                                                                          (v) {
-                                                                        setState(
-                                                                            () {
-                                                                          textModel.fontSize =
-                                                                              v;
-                                                                        });
-                                                                      },
-                                                                      onChanged:
-                                                                          (v) {
-                                                                        setStater(
-                                                                            () {
-                                                                          textModel.fontSize =
-                                                                              v;
-                                                                        });
-                                                                        setState(
-                                                                            () {
-                                                                          textModel.fontSize =
-                                                                              v;
-                                                                        });
-                                                                      });
-                                                                },
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        );
-                                                      },
-                                                    );
-                                                  },
-                                                  onpanupdate: (details) {
-                                                    setState(() {
-                                                      textModel.offset = Offset(
-                                                          textModel.offset.dx +
-                                                              details.delta.dx,
-                                                          textModel.offset.dy +
-                                                              details.delta.dy);
-                                                    });
-                                                  },
-                                                  text: textModel.text,
-                                                  textColor:
-                                                      textModel.textColor,
-                                                  fontsize: textModel.fontSize,
-                                                  align: TextAlign.center,
-                                                ),
-                                              ),
-                                            ),
-                                            Positioned(
-                                              left: textModel.offset.dx - 8,
-                                              top: textModel.offset.dy - 8,
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  setState(() {
-                                                    widgets.removeWhere(
-                                                        (widget) =>
-                                                            widget ==
-                                                            widgets[i]);
-                                                  });
-                                                },
-                                                child: Container(
-                                                    decoration: BoxDecoration(
-                                                        color: editWidget
-                                                            ? Colors.black
-                                                            : Colors
-                                                                .transparent,
-                                                        shape: BoxShape.circle,
-                                                        border: Border.all(
-                                                            width: 1,
-                                                            color: editWidget
-                                                                ? Colors.black
-                                                                : Colors
-                                                                    .transparent)),
-                                                    child: Icon(
-                                                      Icons.close,
-                                                      color: editWidget
-                                                          ? Colors.white
-                                                          : Colors.transparent,
-                                                      size: 14,
-                                                    )),
-                                              ),
-                                            )
-                                          ],
-                                        ),
-                                      );
-                                    } else {
-                                      ImageModel imageModel = widget;
-                                      TextEditingController
-                                          imageWidthController =
-                                          TextEditingController(
-                                              text:
-                                                  imageModel.width.toString());
-                                      TextEditingController
-                                          imageHeightController =
-                                          TextEditingController(
-                                              text:
-                                                  imageModel.height.toString());
-                                      return MapEntry(
-                                        i,
-                                        Stack(
-                                          children: [
-                                            Positioned(
-                                              left: imageModel.offset.dx,
-                                              top: imageModel.offset.dy,
-                                              child: Container(
-                                                padding: EdgeInsets.all(10),
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                      color: editWidget
-                                                          ? Colors.black
-                                                          : Colors.transparent,
-                                                      width: 0.3),
-                                                ),
-                                                child: ImageView(
-                                                  ontap: () {
-                                                    showModalBottomSheet(
-                                                      shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.vertical(
-                                                                  top: Radius
-                                                                      .circular(
-                                                                          25.0))),
-                                                      isScrollControlled: true,
-                                                      context: context,
-                                                      builder: (context) {
-                                                        return Padding(
-                                                          padding:
-                                                              MediaQuery.of(
-                                                                      context)
-                                                                  .viewInsets,
-                                                          child:
-                                                              StatefulBuilder(
-                                                            builder: (context,
-                                                                StateSetter
-                                                                    setStater) {
-                                                              return Container(
-                                                                height: 120,
-                                                                child: Column(
-                                                                  mainAxisSize:
-                                                                      MainAxisSize
-                                                                          .min,
-                                                                  children: <
-                                                                      Widget>[
-                                                                    Padding(
-                                                                      padding: const EdgeInsets
-                                                                              .symmetric(
-                                                                          vertical:
-                                                                              10.0),
+                                  Stack(
+                                      children: widgets
+                                          .asMap()
+                                          .map((i, widget) {
+                                            if (widget.runtimeType ==
+                                                EmojiModel) {
+                                              EmojiModel emojiModel = widget;
+                                              return MapEntry(
+                                                i,
+                                                Stack(
+                                                  children: [
+                                                    Positioned(
+                                                      left:
+                                                          emojiModel.offset.dx,
+                                                      top: emojiModel.offset.dy,
+                                                      child: Container(
+                                                        padding:
+                                                            EdgeInsets.all(5),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          border: Border.all(
+                                                              color: editWidget
+                                                                  ? Colors.black
+                                                                  : Colors
+                                                                      .transparent,
+                                                              width: 0.3),
+                                                        ),
+                                                        child: EmojiView(
+                                                          ontap: () {
+                                                            showModalBottomSheet(
+                                                              shape: RoundedRectangleBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius.vertical(
+                                                                          top: Radius.circular(
+                                                                              25.0))),
+                                                              context: context,
+                                                              builder:
+                                                                  (context) {
+                                                                return StatefulBuilder(
+                                                                  builder: (context,
+                                                                      StateSetter
+                                                                          setStater) {
+                                                                    return Container(
+                                                                      height:
+                                                                          120,
                                                                       child:
-                                                                          Row(
-                                                                        children: [
-                                                                          Expanded(
-                                                                              flex: 8,
-                                                                              child: Align(alignment: Alignment.center, child: new Text("Image Size"))),
-                                                                          Expanded(
-                                                                            flex:
-                                                                                2,
+                                                                          Column(
+                                                                        children: <
+                                                                            Widget>[
+                                                                          Padding(
+                                                                            padding:
+                                                                                const EdgeInsets.all(20.0),
                                                                             child:
-                                                                                GestureDetector(
-                                                                              onTap: () {
-                                                                                Navigator.of(context).pop();
-                                                                              },
-                                                                              child: Container(
-                                                                                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.green),
-                                                                                  alignment: Alignment.center,
-                                                                                  child: Icon(
-                                                                                    Icons.done,
-                                                                                    color: Colors.white,
-                                                                                  )),
-                                                                            ),
-                                                                          )
-                                                                        ],
-                                                                      ),
-                                                                    ),
-                                                                    Divider(
-                                                                      height: 1,
-                                                                    ),
-                                                                    Expanded(
-                                                                      child:
-                                                                          Row(
-                                                                        mainAxisAlignment:
-                                                                            MainAxisAlignment.spaceEvenly,
-                                                                        children: [
-                                                                          SizedBox(
-                                                                            width:
-                                                                                10,
+                                                                                new Text("Slider Size"),
                                                                           ),
-                                                                          Expanded(
-                                                                            flex:
-                                                                                3,
-                                                                            child: TextField(
-                                                                                controller: imageHeightController,
-                                                                                keyboardType: TextInputType.numberWithOptions(),
-                                                                                decoration: InputDecoration(labelText: 'Height', hintText: 'Height', contentPadding: EdgeInsets.only(left: 10), border: OutlineInputBorder())),
+                                                                          Divider(
+                                                                            height:
+                                                                                1,
                                                                           ),
-                                                                          SizedBox(
-                                                                            width:
-                                                                                10,
-                                                                          ),
-                                                                          Expanded(
-                                                                            flex:
-                                                                                3,
-                                                                            child: TextField(
-                                                                                controller: imageWidthController,
-                                                                                keyboardType: TextInputType.numberWithOptions(),
-                                                                                decoration: InputDecoration(labelText: 'Width', hintText: 'Width', contentPadding: EdgeInsets.only(left: 10), border: OutlineInputBorder())),
-                                                                          ),
-                                                                          SizedBox(
-                                                                            width:
-                                                                                10,
-                                                                          ),
-                                                                          Expanded(
-                                                                            flex:
-                                                                                2,
-                                                                            child:
-                                                                                RaisedButton(
-                                                                              color: Colors.green,
-                                                                              onPressed: () {
+                                                                          new Slider(
+                                                                              inactiveColor: Colors.lightGreen,
+                                                                              activeColor: Colors.green,
+                                                                              value: emojiModel.fontSize,
+                                                                              min: 0.0,
+                                                                              max: 400.0,
+                                                                              onChangeEnd: (v) {
                                                                                 setState(() {
-                                                                                  imageModel.height = double.tryParse(imageHeightController.text);
-                                                                                  imageModel.width = double.tryParse(imageWidthController.text);
+                                                                                  emojiModel.fontSize = v;
                                                                                 });
                                                                               },
-                                                                              child: Text(
-                                                                                "Change",
-                                                                                style: TextStyle(color: Colors.white),
-                                                                              ),
-                                                                            ),
-                                                                          ),
-                                                                          SizedBox(
-                                                                            width:
-                                                                                10,
-                                                                          ),
+                                                                              onChanged: (v) {
+                                                                                setStater(() {
+                                                                                  emojiModel.fontSize = v;
+                                                                                });
+                                                                                setState(() {
+                                                                                  emojiModel.fontSize = v;
+                                                                                });
+                                                                              }),
                                                                         ],
                                                                       ),
-                                                                    )
-                                                                  ],
-                                                                ),
-                                                              );
-                                                            },
-                                                          ),
-                                                        );
-                                                      },
-                                                    );
-                                                  },
-                                                  onpanupdate: (details) {
-                                                    setState(() {
-                                                      imageModel.offset =
-                                                          Offset(
-                                                              imageModel.offset
-                                                                      .dx +
-                                                                  details
-                                                                      .delta.dx,
-                                                              imageModel.offset
-                                                                      .dy +
-                                                                  details.delta
-                                                                      .dy);
-                                                    });
-                                                  },
-                                                  file: imageModel.imageFile,
-                                                  width: imageModel.width
-                                                      .toDouble(),
-                                                  height: imageModel.height
-                                                      .toDouble(),
+                                                                    );
+                                                                  },
+                                                                );
+                                                              },
+                                                            );
+                                                          },
+                                                          onpanupdate:
+                                                              (details) {
+                                                            setState(() {
+                                                              emojiModel.offset = Offset(
+                                                                  emojiModel
+                                                                          .offset
+                                                                          .dx +
+                                                                      details
+                                                                          .delta
+                                                                          .dx,
+                                                                  emojiModel
+                                                                          .offset
+                                                                          .dy +
+                                                                      details
+                                                                          .delta
+                                                                          .dy);
+                                                            });
+                                                          },
+                                                          value:
+                                                              emojiModel.emoji,
+                                                          fontsize: emojiModel
+                                                              .fontSize,
+                                                          align:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Positioned(
+                                                      left:
+                                                          emojiModel.offset.dx -
+                                                              8,
+                                                      top:
+                                                          emojiModel.offset.dy -
+                                                              8,
+                                                      child: GestureDetector(
+                                                        onTap: () {
+                                                          print(i);
+                                                          setState(() {
+                                                            widgets.removeWhere(
+                                                                (widget) =>
+                                                                    widget ==
+                                                                    widgets[i]);
+                                                          });
+                                                        },
+                                                        child: Container(
+                                                            decoration: BoxDecoration(
+                                                                color: editWidget
+                                                                    ? Colors
+                                                                        .black
+                                                                    : Colors
+                                                                        .transparent,
+                                                                shape: BoxShape
+                                                                    .circle,
+                                                                border: Border.all(
+                                                                    width: 1,
+                                                                    color: editWidget
+                                                                        ? Colors
+                                                                            .black
+                                                                        : Colors
+                                                                            .transparent)),
+                                                            child: Icon(
+                                                              Icons.close,
+                                                              color: editWidget
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                      .transparent,
+                                                              size: 14,
+                                                            )),
+                                                      ),
+                                                    )
+                                                  ],
                                                 ),
-                                              ),
-                                            ),
-                                            Positioned(
-                                              left: imageModel.offset.dx - 8,
-                                              top: imageModel.offset.dy - 8,
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  setState(() {
-                                                    widgets.removeWhere(
-                                                        (widget) =>
-                                                            widget ==
-                                                            widgets[i]);
-                                                  });
-                                                },
-                                                child: Container(
-                                                    decoration: BoxDecoration(
-                                                        color: editWidget
-                                                            ? Colors.black
-                                                            : Colors
-                                                                .transparent,
-                                                        shape: BoxShape.circle,
-                                                        border: Border.all(
-                                                            width: 1,
-                                                            color: editWidget
-                                                                ? Colors.black
-                                                                : Colors
-                                                                    .transparent)),
-                                                    child: Icon(
-                                                      Icons.close,
-                                                      color: editWidget
-                                                          ? Colors.white
-                                                          : Colors.transparent,
-                                                      size: 14,
-                                                    )),
-                                              ),
-                                            )
-                                          ],
-                                        ),
-                                      );
-                                    }
-                                  })
-                                  .values
-                                  .toList()),
-                        ],
+                                              );
+                                            } else if (widget.runtimeType ==
+                                                TextModel) {
+                                              TextModel textModel = widget;
+                                              return MapEntry(
+                                                i,
+                                                Stack(
+                                                  children: [
+                                                    Positioned(
+                                                      left: textModel.offset.dx,
+                                                      top: textModel.offset.dy,
+                                                      child: Container(
+                                                        padding:
+                                                            EdgeInsets.all(10),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          border: Border.all(
+                                                              color: editWidget
+                                                                  ? Colors.black
+                                                                  : Colors
+                                                                      .transparent,
+                                                              width: 0.3),
+                                                        ),
+                                                        child: TextView(
+                                                          ontap: () {
+                                                            showModalBottomSheet(
+                                                              shape: RoundedRectangleBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius.vertical(
+                                                                          top: Radius.circular(
+                                                                              25.0))),
+                                                              context: context,
+                                                              builder:
+                                                                  (context) {
+                                                                return Container(
+                                                                  height: 120,
+                                                                  child: Column(
+                                                                    children: <
+                                                                        Widget>[
+                                                                      Padding(
+                                                                        padding:
+                                                                            const EdgeInsets.all(20.0),
+                                                                        child: new Text(
+                                                                            "Slider Size"),
+                                                                      ),
+                                                                      Divider(
+                                                                        height:
+                                                                            1,
+                                                                      ),
+                                                                      StatefulBuilder(
+                                                                        builder:
+                                                                            (context,
+                                                                                StateSetter setStater) {
+                                                                          return Slider(
+                                                                              inactiveColor: Colors.lightGreen,
+                                                                              activeColor: Colors.green,
+                                                                              value: textModel.fontSize,
+                                                                              min: 0.0,
+                                                                              max: 400.0,
+                                                                              onChangeEnd: (v) {
+                                                                                setState(() {
+                                                                                  textModel.fontSize = v;
+                                                                                });
+                                                                              },
+                                                                              onChanged: (v) {
+                                                                                setStater(() {
+                                                                                  textModel.fontSize = v;
+                                                                                });
+                                                                                setState(() {
+                                                                                  textModel.fontSize = v;
+                                                                                });
+                                                                              });
+                                                                        },
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                );
+                                                              },
+                                                            );
+                                                          },
+                                                          onpanupdate:
+                                                              (details) {
+                                                            setState(() {
+                                                              textModel.offset = Offset(
+                                                                  textModel
+                                                                          .offset
+                                                                          .dx +
+                                                                      details
+                                                                          .delta
+                                                                          .dx,
+                                                                  textModel
+                                                                          .offset
+                                                                          .dy +
+                                                                      details
+                                                                          .delta
+                                                                          .dy);
+                                                            });
+                                                          },
+                                                          text: textModel.text,
+                                                          textColor: textModel
+                                                              .textColor,
+                                                          fontsize: textModel
+                                                              .fontSize,
+                                                          align:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Positioned(
+                                                      left:
+                                                          textModel.offset.dx -
+                                                              8,
+                                                      top: textModel.offset.dy -
+                                                          8,
+                                                      child: GestureDetector(
+                                                        onTap: () {
+                                                          setState(() {
+                                                            widgets.removeWhere(
+                                                                (widget) =>
+                                                                    widget ==
+                                                                    widgets[i]);
+                                                          });
+                                                        },
+                                                        child: Container(
+                                                            decoration: BoxDecoration(
+                                                                color: editWidget
+                                                                    ? Colors
+                                                                        .black
+                                                                    : Colors
+                                                                        .transparent,
+                                                                shape: BoxShape
+                                                                    .circle,
+                                                                border: Border.all(
+                                                                    width: 1,
+                                                                    color: editWidget
+                                                                        ? Colors
+                                                                            .black
+                                                                        : Colors
+                                                                            .transparent)),
+                                                            child: Icon(
+                                                              Icons.close,
+                                                              color: editWidget
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                      .transparent,
+                                                              size: 14,
+                                                            )),
+                                                      ),
+                                                    )
+                                                  ],
+                                                ),
+                                              );
+                                            } else {
+                                              ImageModel imageModel = widget;
+                                              TextEditingController
+                                                  imageWidthController =
+                                                  TextEditingController(
+                                                      text: imageModel.width
+                                                          .toString());
+                                              TextEditingController
+                                                  imageHeightController =
+                                                  TextEditingController(
+                                                      text: imageModel.height
+                                                          .toString());
+                                              return MapEntry(
+                                                i,
+                                                Stack(
+                                                  children: [
+                                                    Positioned(
+                                                      left:
+                                                          imageModel.offset.dx,
+                                                      top: imageModel.offset.dy,
+                                                      child: Container(
+                                                        padding:
+                                                            EdgeInsets.all(10),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          border: Border.all(
+                                                              color: editWidget
+                                                                  ? Colors.black
+                                                                  : Colors
+                                                                      .transparent,
+                                                              width: 0.3),
+                                                        ),
+                                                        child: ImageView(
+                                                          ontap: () {
+                                                            showModalBottomSheet(
+                                                              shape: RoundedRectangleBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius.vertical(
+                                                                          top: Radius.circular(
+                                                                              25.0))),
+                                                              isScrollControlled:
+                                                                  true,
+                                                              context: context,
+                                                              builder:
+                                                                  (context) {
+                                                                return Padding(
+                                                                  padding: MediaQuery.of(
+                                                                          context)
+                                                                      .viewInsets,
+                                                                  child:
+                                                                      StatefulBuilder(
+                                                                    builder: (context,
+                                                                        StateSetter
+                                                                            setStater) {
+                                                                      return Container(
+                                                                        height:
+                                                                            120,
+                                                                        child:
+                                                                            Column(
+                                                                          mainAxisSize:
+                                                                              MainAxisSize.min,
+                                                                          children: <
+                                                                              Widget>[
+                                                                            Padding(
+                                                                              padding: const EdgeInsets.symmetric(vertical: 10.0),
+                                                                              child: Row(
+                                                                                children: [
+                                                                                  Expanded(flex: 8, child: Align(alignment: Alignment.center, child: new Text("Image Size"))),
+                                                                                  Expanded(
+                                                                                    flex: 2,
+                                                                                    child: GestureDetector(
+                                                                                      onTap: () {
+                                                                                        Navigator.of(context).pop();
+                                                                                      },
+                                                                                      child: Container(
+                                                                                          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.green),
+                                                                                          alignment: Alignment.center,
+                                                                                          child: Icon(
+                                                                                            Icons.done,
+                                                                                            color: Colors.white,
+                                                                                          )),
+                                                                                    ),
+                                                                                  )
+                                                                                ],
+                                                                              ),
+                                                                            ),
+                                                                            Divider(
+                                                                              height: 1,
+                                                                            ),
+                                                                            Expanded(
+                                                                              child: Row(
+                                                                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                                                                children: [
+                                                                                  SizedBox(
+                                                                                    width: 10,
+                                                                                  ),
+                                                                                  Expanded(
+                                                                                    flex: 3,
+                                                                                    child: TextField(controller: imageHeightController, keyboardType: TextInputType.numberWithOptions(), decoration: InputDecoration(labelText: 'Height', hintText: 'Height', contentPadding: EdgeInsets.only(left: 10), border: OutlineInputBorder())),
+                                                                                  ),
+                                                                                  SizedBox(
+                                                                                    width: 10,
+                                                                                  ),
+                                                                                  Expanded(
+                                                                                    flex: 3,
+                                                                                    child: TextField(controller: imageWidthController, keyboardType: TextInputType.numberWithOptions(), decoration: InputDecoration(labelText: 'Width', hintText: 'Width', contentPadding: EdgeInsets.only(left: 10), border: OutlineInputBorder())),
+                                                                                  ),
+                                                                                  SizedBox(
+                                                                                    width: 10,
+                                                                                  ),
+                                                                                  Expanded(
+                                                                                    flex: 2,
+                                                                                    child: RaisedButton(
+                                                                                      color: Colors.green,
+                                                                                      onPressed: () {
+                                                                                        setState(() {
+                                                                                          imageModel.height = double.tryParse(imageHeightController.text);
+                                                                                          imageModel.width = double.tryParse(imageWidthController.text);
+                                                                                        });
+                                                                                      },
+                                                                                      child: Text(
+                                                                                        "Change",
+                                                                                        style: TextStyle(color: Colors.white),
+                                                                                      ),
+                                                                                    ),
+                                                                                  ),
+                                                                                  SizedBox(
+                                                                                    width: 10,
+                                                                                  ),
+                                                                                ],
+                                                                              ),
+                                                                            )
+                                                                          ],
+                                                                        ),
+                                                                      );
+                                                                    },
+                                                                  ),
+                                                                );
+                                                              },
+                                                            );
+                                                          },
+                                                          onpanupdate:
+                                                              (details) {
+                                                            setState(() {
+                                                              imageModel.offset = Offset(
+                                                                  imageModel
+                                                                          .offset
+                                                                          .dx +
+                                                                      details
+                                                                          .delta
+                                                                          .dx,
+                                                                  imageModel
+                                                                          .offset
+                                                                          .dy +
+                                                                      details
+                                                                          .delta
+                                                                          .dy);
+                                                            });
+                                                          },
+                                                          file: imageModel
+                                                              .imageFile,
+                                                          width: imageModel
+                                                              .width
+                                                              .toDouble(),
+                                                          height: imageModel
+                                                              .height
+                                                              .toDouble(),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Positioned(
+                                                      left:
+                                                          imageModel.offset.dx -
+                                                              8,
+                                                      top:
+                                                          imageModel.offset.dy -
+                                                              8,
+                                                      child: GestureDetector(
+                                                        onTap: () {
+                                                          setState(() {
+                                                            widgets.removeWhere(
+                                                                (widget) =>
+                                                                    widget ==
+                                                                    widgets[i]);
+                                                          });
+                                                        },
+                                                        child: Container(
+                                                            decoration: BoxDecoration(
+                                                                color: editWidget
+                                                                    ? Colors
+                                                                        .black
+                                                                    : Colors
+                                                                        .transparent,
+                                                                shape: BoxShape
+                                                                    .circle,
+                                                                border: Border.all(
+                                                                    width: 1,
+                                                                    color: editWidget
+                                                                        ? Colors
+                                                                            .black
+                                                                        : Colors
+                                                                            .transparent)),
+                                                            child: Icon(
+                                                              Icons.close,
+                                                              color: editWidget
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                      .transparent,
+                                                              size: 14,
+                                                            )),
+                                                      ),
+                                                    )
+                                                  ],
+                                                ),
+                                              );
+                                            }
+                                          })
+                                          .values
+                                          .toList()),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  InkWell(
-                    onTap: () {
-                      if (_controller.isEmpty) {
-                        _scaffoldKey.currentState.showSnackBar(SnackBar(
-                          content: Text('Screen cleaned'),
-                          duration: Duration(milliseconds: 300),
-                        ));
-                      } else {
-                        _controller.points.clear();
-                        setState(() {});
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 3),
-                      child: Column(
-                        children: [
-                          Icon(
-                            FontAwesomeIcons.undo,
-                            color: Colors.grey[700],
-                            size: 30,
+                  Container(
+                    margin: const EdgeInsets.symmetric(
+                        vertical: 15, horizontal: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            if (_controller.isEmpty) {
+                              _scaffoldKey.currentState.showSnackBar(SnackBar(
+                                content: Text('Screen cleaned'),
+                                duration: Duration(milliseconds: 300),
+                              ));
+                            } else {
+                              _controller.points.clear();
+                              setState(() {});
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 3),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  FontAwesomeIcons.undo,
+                                  color: Colors.grey[700],
+                                  size: 30,
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Text(
+                                  'Undo',
+                                  style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 15),
+                                )
+                              ],
+                            ),
                           ),
-                          SizedBox(
-                            height: 10,
+                        ),
+                        InkWell(
+                          onTap: () {
+                            bottomsheets();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 26, vertical: 3),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.tune_outlined,
+                                  color: Colors.grey[700],
+                                  size: 30,
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Text(
+                                  'Choose Background',
+                                  style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 15),
+                                )
+                              ],
+                            ),
                           ),
-                          Text(
-                            'Undo',
-                            style: TextStyle(
-                                color: Colors.grey[700],
-                                fontWeight: FontWeight.w500,
-                                fontSize: 15),
-                          )
-                        ],
-                      ),
+                        ),
+                        InkWell(
+                          onTap: () {},
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 3),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  FontAwesomeIcons.redo,
+                                  color: Colors.grey[700],
+                                  size: 30,
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Text(
+                                  'Redo',
+                                  style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 15),
+                                )
+                              ],
+                            ),
+                          ),
+                        )
+                      ],
                     ),
                   ),
-                  InkWell(
-                    onTap: () {
-                      bottomsheets();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 26, vertical: 3),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.tune_outlined,
-                            color: Colors.grey[700],
-                            size: 30,
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          Text(
-                            'Choose Background',
-                            style: TextStyle(
-                                color: Colors.grey[700],
-                                fontWeight: FontWeight.w500,
-                                fontSize: 15),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {},
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 3),
-                      child: Column(
-                        children: [
-                          Icon(
-                            FontAwesomeIcons.redo,
-                            color: Colors.grey[700],
-                            size: 30,
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          Text(
-                            'Redo',
-                            style: TextStyle(
-                                color: Colors.grey[700],
-                                fontWeight: FontWeight.w500,
-                                fontSize: 15),
-                          )
-                        ],
-                      ),
-                    ),
-                  )
                 ],
               ),
             ),
-          ],
-        ),
-      ),
       bottomNavigationBar: openbottomsheet
           ? new Container()
           : BottomNavigationBar(
@@ -1058,7 +1110,6 @@ class _SignatState extends State<Signat> {
   @override
   void initState() {
     super.initState();
-    _controller.addListener(() => print("Value changed"));
   }
 
   @override
