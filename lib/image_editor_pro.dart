@@ -187,7 +187,7 @@ class _ImageEditorProState extends State<ImageEditorPro> {
                                             _image,
                                             height: height.toDouble(),
                                             width: width.toDouble(),
-                                            fit: BoxFit.cover,
+                                            fit: BoxFit.fill,
                                           ),
                                         )
                                       : Container(),
