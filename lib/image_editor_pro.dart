@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io';
-
+import 'package:edge_detection/edge_detection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:image_cropper/image_cropper.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -971,119 +973,191 @@ class _ImageEditorProState extends State<ImageEditorPro> {
     Future<void> future = showModalBottomSheet<void>(
       context: context,
       builder: (BuildContext context) {
-        return new Container(
-          decoration: BoxDecoration(color: Colors.white, boxShadow: [
-            BoxShadow(blurRadius: 10.9, color: Colors.grey[400])
-          ]),
-          height: 170,
-          child: new Column(
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: new Text("Select Image Options"),
-              ),
-              Divider(
-                height: 1,
-              ),
-              new Container(
-                padding: EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    Container(
-                      child: InkWell(
-                        onTap: () {},
-                        child: Container(
-                          child: Column(
-                            children: <Widget>[
-                              IconButton(
-                                  icon: Icon(Icons.photo_library),
-                                  onPressed: () async {
-                                    var pickedFile = await picker.getImage(
-                                        source: ImageSource.gallery);
-                                    var decodedImage =
-                                        await decodeImageFromList(
-                                            File(pickedFile.path)
-                                                .readAsBytesSync());
-
-                                    if (forImageModel) {
-                                      ImageModel imageModel = ImageModel(
-                                        offset: Offset(10, 10),
-                                        height: 100,
-                                        width: 100,
-                                        uniqueId: UniqueKey(),
-                                        imageFile: File(pickedFile.path),
-                                      );
-                                      setState(() {
-                                        widgets.add(imageModel);
-                                        howmuchwidgetis++;
-                                      });
-                                    } else {
-                                      setState(() {
-                                        height = decodedImage.height.toDouble();
-                                        width = decodedImage.width.toDouble();
-                                        _image = File(pickedFile.path);
-                                      });
-                                      setState(() => _controller.clear());
-                                    }
-
-                                    Navigator.pop(context);
-                                  }),
-                              SizedBox(width: 10),
-                              Text("Open Gallery")
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 24),
-                    InkWell(
-                      onTap: () {},
-                      child: Container(
-                        child: Column(
-                          children: <Widget>[
-                            IconButton(
-                                icon: Icon(Icons.camera_alt),
-                                onPressed: () async {
-                                  var pickedFile = await picker.getImage(
-                                      source: ImageSource.camera);
-                                  var decodedImage = await decodeImageFromList(
-                                      File(pickedFile.path).readAsBytesSync());
-
-                                  if (forImageModel) {
-                                    ImageModel imageModel = ImageModel(
-                                      offset: Offset(10, 10),
-                                      height: 100,
-                                      width: 100,
-                                      uniqueId: UniqueKey(),
-                                      imageFile: File(pickedFile.path),
-                                    );
-                                    setState(() {
-                                      widgets.add(imageModel);
-                                      howmuchwidgetis++;
-                                    });
-                                  } else {
-                                    setState(() {
-                                      height = decodedImage.height.toDouble();
-                                      width = decodedImage.width.toDouble();
-                                      _image = File(pickedFile.path);
-                                    });
-                                    setState(() => _controller.clear());
-                                  }
-
-                                  Navigator.pop(context);
-                                }),
-                            SizedBox(width: 10),
-                            Text("Open Camera")
-                          ],
-                        ),
-                      ),
-                    )
-                  ],
+        return SafeArea(
+          child: Container(
+            decoration: BoxDecoration(color: Colors.white, boxShadow: [
+              BoxShadow(blurRadius: 10.9, color: Colors.grey[400])
+            ]),
+            child: new Wrap(
+              children: <Widget>[
+                Divider(
+                  height: 1,
                 ),
-              )
-            ],
+                ListTile(
+                    leading: new Icon(
+                      Icons.credit_card_outlined,
+                      color: Colors.grey[800],
+                    ),
+                    title: new Text(
+                      "Take a photo of your card",
+                      style: TextStyle(color: Colors.grey[900]),
+                    ),
+                    onTap: () async {
+                      String imagePath = await EdgeDetection.detectEdge;
+                      var decodedImage = await decodeImageFromList(
+                          File(imagePath).readAsBytesSync());
+
+                      if (forImageModel) {
+                        ImageModel imageModel = ImageModel(
+                          offset: Offset(10, 10),
+                          height: 100,
+                          width: 100,
+                          uniqueId: UniqueKey(),
+                          imageFile: File(imagePath),
+                        );
+                        setState(() {
+                          widgets.add(imageModel);
+                          howmuchwidgetis++;
+                        });
+                      } else {
+                        setState(() {
+                          height = decodedImage.height.toDouble();
+                          width = decodedImage.width.toDouble();
+                          _image = File(imagePath);
+                        });
+                        setState(() => _controller.clear());
+                      }
+
+                      Navigator.pop(context);
+                    }),
+                ListTile(
+                    leading: new Icon(
+                      Icons.photo_library,
+                      color: Colors.grey[800],
+                    ),
+                    title: new Text(
+                      "Open Gallery",
+                      style: TextStyle(color: Colors.grey[900]),
+                    ),
+                    onTap: () async {
+                      var pickedFile =
+                          await picker.getImage(source: ImageSource.gallery);
+                      // String imagePath =
+                      //     await EdgeDetection.detectEdge;
+                      File croppedFile = await ImageCropper.cropImage(
+                          sourcePath: pickedFile.path,
+                          aspectRatioPresets: Platform.isAndroid
+                              ? [
+                                  CropAspectRatioPreset.square,
+                                  CropAspectRatioPreset.ratio3x2,
+                                  CropAspectRatioPreset.original,
+                                  CropAspectRatioPreset.ratio4x3,
+                                  CropAspectRatioPreset.ratio16x9
+                                ]
+                              : [
+                                  CropAspectRatioPreset.original,
+                                  CropAspectRatioPreset.square,
+                                  CropAspectRatioPreset.ratio3x2,
+                                  CropAspectRatioPreset.ratio4x3,
+                                  CropAspectRatioPreset.ratio5x3,
+                                  CropAspectRatioPreset.ratio5x4,
+                                  CropAspectRatioPreset.ratio7x5,
+                                  CropAspectRatioPreset.ratio16x9
+                                ],
+                          androidUiSettings: AndroidUiSettings(
+                              toolbarTitle: 'Cropper',
+                              toolbarColor: Colors.deepOrange,
+                              toolbarWidgetColor: Colors.white,
+                              initAspectRatio: CropAspectRatioPreset.original,
+                              lockAspectRatio: false),
+                          iosUiSettings: IOSUiSettings(
+                            title: 'Cropper',
+                          ));
+                      var decodedImage = await decodeImageFromList(
+                          File(croppedFile.path).readAsBytesSync());
+
+                      if (forImageModel) {
+                        ImageModel imageModel = ImageModel(
+                          offset: Offset(10, 10),
+                          height: 100,
+                          width: 100,
+                          uniqueId: UniqueKey(),
+                          imageFile: File(croppedFile.path),
+                        );
+                        setState(() {
+                          widgets.add(imageModel);
+                          howmuchwidgetis++;
+                        });
+                      } else {
+                        setState(() {
+                          height = decodedImage.height.toDouble();
+                          width = decodedImage.width.toDouble();
+                          _image = File(croppedFile.path);
+                        });
+                        setState(() => _controller.clear());
+                      }
+
+                      Navigator.pop(context);
+                    }),
+                ListTile(
+                    leading: new Icon(
+                      Icons.camera_alt,
+                      color: Colors.grey[800],
+                    ),
+                    title: new Text(
+                      "Open Camera",
+                      style: TextStyle(color: Colors.grey[900]),
+                    ),
+                    onTap: () async {
+                      var pickedFile =
+                          await picker.getImage(source: ImageSource.camera);
+                      File croppedFile = await ImageCropper.cropImage(
+                          sourcePath: pickedFile.path,
+                          aspectRatioPresets: Platform.isAndroid
+                              ? [
+                                  CropAspectRatioPreset.square,
+                                  CropAspectRatioPreset.ratio3x2,
+                                  CropAspectRatioPreset.original,
+                                  CropAspectRatioPreset.ratio4x3,
+                                  CropAspectRatioPreset.ratio16x9
+                                ]
+                              : [
+                                  CropAspectRatioPreset.original,
+                                  CropAspectRatioPreset.square,
+                                  CropAspectRatioPreset.ratio3x2,
+                                  CropAspectRatioPreset.ratio4x3,
+                                  CropAspectRatioPreset.ratio5x3,
+                                  CropAspectRatioPreset.ratio5x4,
+                                  CropAspectRatioPreset.ratio7x5,
+                                  CropAspectRatioPreset.ratio16x9
+                                ],
+                          androidUiSettings: AndroidUiSettings(
+                              toolbarTitle: 'Cardit',
+                              toolbarColor: Colors.deepOrange,
+                              toolbarWidgetColor: Colors.white,
+                              initAspectRatio: CropAspectRatioPreset.original,
+                              lockAspectRatio: false),
+                          iosUiSettings: IOSUiSettings(
+                            title: 'Cardit',
+                          ));
+                      var decodedImage = await decodeImageFromList(
+                          File(croppedFile.path).readAsBytesSync());
+
+                      if (forImageModel) {
+                        ImageModel imageModel = ImageModel(
+                          offset: Offset(10, 10),
+                          height: 100,
+                          width: 100,
+                          uniqueId: UniqueKey(),
+                          imageFile: File(croppedFile.path),
+                        );
+                        setState(() {
+                          widgets.add(imageModel);
+                          howmuchwidgetis++;
+                        });
+                      } else {
+                        setState(() {
+                          height = decodedImage.height.toDouble();
+                          width = decodedImage.width.toDouble();
+                          _image = File(croppedFile.path);
+                        });
+                        setState(() => _controller.clear());
+                      }
+
+                      Navigator.pop(context);
+                    }),
+              ],
+            ),
           ),
         );
       },
